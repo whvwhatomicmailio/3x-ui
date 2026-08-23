@@ -1,29 +1,11 @@
-FROM python:3.13-slim
+FROM ghcr.io/mhsanaei/3x-ui:v2.9.0
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+USER root
 
-WORKDIR /app
+RUN apk add --no-cache sqlite curl bash
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-       build-essential git curl ca-certificates libssl-dev zlib1g-dev pkg-config \
-    && rm -rf /var/lib/apt/lists/*
-
-# Build the official Telegram MTProxy binary.
-RUN git clone --depth 1 https://github.com/TelegramMessenger/MTProxy.git /tmp/MTProxy \
-    && make -C /tmp/MTProxy \
-    && install -m 0755 /tmp/MTProxy/objs/bin/mtproto-proxy /usr/local/bin/mtproto-proxy \
-    && rm -rf /tmp/MTProxy
-
-COPY requirements.txt ./
-RUN pip install -r requirements.txt
-
-COPY . .
-RUN python -m py_compile main.py telegram_proxy.py relay_vless.py shared.py pages.py
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
 
 EXPOSE 8080
-EXPOSE 443
-
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+CMD ["/start.sh"]
